@@ -26,6 +26,7 @@ this.getColumns = function(){
   {"data": "port_b", "name": "Port B"},
   {"data": "bytes", "name": "Bytes"},
   {"data": "packets", "name": "Packets"},
+  {"data": "package_name", "name": "Package"},
   {"data": "rel_start", "name": "Rel Start", "width":"7%"},
   {"data": "duration", "name": "Duration", "width":"7%"},
   {"data": "packets_a_b", "name": "Packets A-B"},
