@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS `CONVERSATIONS_MITM` (
   `bytes_b_a` int(11) NOT NULL DEFAULT '0',
   `selected` int(11) NOT NULL DEFAULT '0',
   `decrypted` int(11) NOT NULL DEFAULT '0',
+  `package_name` varchar(100) NOT NULL DEFAULT '',
   PRIMARY KEY (`id_conversation_mitm`),
   KEY `id_session` (`id_session`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2291 DEFAULT CHARSET=utf8mb4;
@@ -88,6 +89,7 @@ CREATE TABLE IF NOT EXISTS `CONVERSATIONS_TCP` (
   `bytes_b_a` int(11) NOT NULL DEFAULT '0',
   `selected` int(11) NOT NULL DEFAULT '0',
   `decrypted` int(11) NOT NULL DEFAULT '0',
+  `package_name` varchar(100) NOT NULL DEFAULT '',
   PRIMARY KEY (`id_conversation_tcp`),
   KEY `id_session` (`id_session`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3587 DEFAULT CHARSET=utf8mb4;
@@ -114,6 +116,7 @@ CREATE TABLE IF NOT EXISTS `CONVERSATIONS_UDP` (
   `bytes_a_b` int(11) NOT NULL DEFAULT '0',
   `bytes_b_a` int(11) NOT NULL DEFAULT '0',
   `selected` int(11) NOT NULL DEFAULT '0',
+  `package_name` varchar(100) NOT NULL DEFAULT '',
   PRIMARY KEY (`id_conversation_udp`),
   KEY `id_session` (`id_session`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2170 DEFAULT CHARSET=utf8mb4;
@@ -201,4 +204,6 @@ CREATE TABLE IF NOT EXISTS `SESSIONS` (
   `date` varchar(200) CHARACTER SET utf8 COLLATE utf8_estonian_ci NOT NULL,
   PRIMARY KEY (`id_session`)
 ) ENGINE=InnoDB AUTO_INCREMENT=239 DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
 

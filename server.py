@@ -6,6 +6,8 @@ app = Flask(__name__, static_url_path='/static')
 from mono import mono_session
 import mono.mono_config as mc
 import mono.mono_packet as mono_packet
+#CUSTOM
+import mono.mono_packet_conversation as mono_pc
 import mono.mono_datatable as md
 import mono.mono_conversation as m_conv
 import mono.mono_param as m_param
@@ -72,6 +74,9 @@ def awebservice():
         params = request.json['params']
         #print (request)
         db2 = connect(mc.db_host, mc.db_user_name, mc.db_password, mc.db_db_name)
+        db3 = connect(mc.db_host, mc.db_user_name, mc.db_password, mc.db_db_name)
+        db4 = connect(mc.db_host, mc.db_user_name, mc.db_password, mc.db_db_name)
+        db5 = connect(mc.db_host, mc.db_user_name, mc.db_password, mc.db_db_name)
         if (method == 'get_sessions'):
             l.info('get_sessions')
             return jsonify(sessions=mono_session.get_sessions(db2))
@@ -290,11 +295,31 @@ def awebservice():
             id_packet = params['id_packet']
             details = mono_packet.get_packet_details(id_packet, db2)
             return jsonify(packet_details=details)
+        #custom request
+        elif (method == 'from_android'):
+            l.info('request from android')
+            id_session = mono_session.get_current_session_id()
+            if(id_session == -1):
+                return jsonify(status='stopped')
+            #m_conv.update_package_conversation(id_session,2,db2,connection)
+            #l.info(len(params))
+            for connection in params:
+                m_conv.update_package_conversation(id_session, connection['proto'], db3, connection)
+                #m_conv.manage_packages(id_session,connection['proto'],connection,db3)
+                #conv_id = m_conv.get_conversation_id(id_session,connection['proto'],db3,connection)
+                #if(conv_id != -1):
+                    #packets = mono_pc.get_packets_from_conversation(conv_id,connection['proto'],db4)
+                    #for packet in packets:
+                        #m_conv.update_package_packet(id_session,packet['id_packet'],connection['packageName'],db2)
+                        #mono_packet.set_package(id_session,packet['id_packet'],connection['packageName'],db2)
+
+            return jsonify(success=1)
         else:
             l.error("Method %s unknown"%method)
             l.error(params)
         #return jsonify(companies=companies)
         db2.close()
+        db3.close()
     except Exception as e:
         print(str(e))
         raise 

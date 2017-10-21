@@ -7,6 +7,7 @@ Created on Wed Mar 29 15:57:42 2017
 """
 import scapy
 
+
 from scapy.all import IP, UDP,TCP 
 import logging 
 from . import mono_tools
@@ -37,7 +38,6 @@ def start_conversations(packet):
 def stop_conversations():
     global convs_start
     convs_start = -1
-
 
 #creates the conversation line in the table CONVERSATION_IPV4/UDP/TCP/MITM  according 
 #to the packet type (if necessary)
@@ -124,6 +124,26 @@ def update_conv(conv, conv_type, db):
     f = ("id_conversation", id_name, "from_a", "already_exists")
     mono_tools.generic_update(table_name, conv, db, id_name, id_value, forbidden_keys = f)
 
+def create_conv(connection,rel_start,conv_type, id_session, db):
+    l = logging.getLogger("mono_conversation")
+    l.debug("CREATE CONVERSATION")
+    names = get_table_name_and_id_key(conv_type)
+    cursor = db.cursor(cursors.DictCursor)
+    table_name = names["table_name"]
+    cv = {"from_a": 1, "id_session": id_session, "ip_a": connection["ip_src"], "ip_b": connection["ip_dst"], "bytes": 0,
+          "rel_start": rel_start,
+          "duration": 0, "packets": 0, "packets_a_b": 0, "packets_b_a": 0, "bytes_a_b": 0, "bytes_b_a": 0, "port_a": connection["prt_src"], "port_b": connection["prt_dst"] }
+    sql = "INSERT INTO "
+    sql += table_name
+    sql += " (id_session, ip_a, ip_b, bytes, rel_start, duration, packets, packets_a_b, packets_b_a, bytes_a_b, bytes_b_a , port_a, port_b, package_name)"
+    sql += " VALUES  (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+    params = (id_session, cv["ip_a"], cv["ip_b"], cv["bytes"], cv["rel_start"], cv["duration"],
+              cv["packets"], cv["packets_a_b"], cv["packets_b_a"], cv["bytes_a_b"], cv["bytes_b_a"], cv["port_a"], cv["port_b"], connection['packageName'])
+    cursor.execute(sql, params)  # safe sql querry
+    db.commit()
+
+
+
 
 
 #auxiliary function 
@@ -164,7 +184,7 @@ def get_or_create_conv_no_packet(s, rel_start, conv_type, id_session, db):
         params += (s["ip_dst"], s["ip_src"])
         if (tcp_or_udp):
             sql = sql[:-3]
-            sql += " AND port_a = %s AND port_b = %s)) "
+            sql += " AND port_a = %s AND port_b = %s)) ORDER BY "+id_key+ " DESC LIMIT 1"
             params += (s["port_dst"], s["port_src"])
         # where clause should look like
         #" WHERE  id_session=%s AND ((ip_a=%s AND ip_b=%s) OR (ip_a=%s AND ip_b=%s)) "
@@ -406,3 +426,117 @@ def conversations_to_pcap(id_session, conv_type, fileName, db, avoid_duplicates 
     except Exception as e:
         mono_tools.handle_db_exception(e, db, cursor)
     return id_list
+
+#Primera aproximación a la query para actualizar las conversaciones y asignar la app a las que han realizado la conexion (MIRAR ESTABILIDAD CON CONEXIONES SQL)
+def update_package_conversation(id_session,conv_type,db,connection):
+    l=logging.getLogger("mono_conversation")
+    l.debug("update packageName conversation")
+    names = get_table_name_and_id_key(conv_type)
+    try:
+        if(conv_type == 2):
+            names2 = get_table_name_and_id_key(7)
+            sql="UPDATE " + names["table_name"]+ " SET package_name=%s WHERE (id_session=%s AND ip_a=%s \
+            AND  ip_b=%s AND port_a=%s AND port_b=%s AND package_name='') OR (id_session=%s AND ip_a=%s \
+            AND  ip_b=%s AND port_a=%s AND port_b=%s AND package_name='') "
+            cursor = db.cursor()
+            cursor.execute(sql,(connection["packageName"],id_session,connection["ip_src"],connection["ip_dst"]
+            ,connection["prt_src"],connection["prt_dst"],id_session,connection["ip_dst"],connection["ip_src"]
+            ,connection["prt_dst"],connection["prt_src"]))  # safe sql querry
+            db.commit()
+            sql2 = "UPDATE " + names2["table_name"] + " SET package_name=%s WHERE (id_session=%s AND ip_a=%s \
+                        AND  ip_b=%s AND port_a=%s AND port_b=%s AND package_name='') OR (id_session=%s AND ip_a=%s \
+                        AND  ip_b=%s AND port_a=%s AND port_b=%s AND package_name='') "
+            cursor = db.cursor()
+            cursor.execute(sql2, (connection["packageName"], id_session, connection["ip_src"], connection["ip_dst"]
+            , connection["prt_src"], connection["prt_dst"], id_session, connection["ip_dst"],connection["ip_src"]
+            , connection["prt_dst"], connection["prt_src"]))  # safe sql querry
+            db.commit()
+            return 0
+        else:
+            sql = "UPDATE " + names["table_name"] + " SET package_name=%s WHERE (id_session=%s AND ip_a=%s \
+            AND  ip_b=%s AND port_a=%s AND port_b=%s AND package_name='') OR (id_session=%s AND ip_a=%s \
+            AND  ip_b=%s AND port_a=%s AND port_b=%s AND package_name='') "
+            cursor = db.cursor()
+            cursor.execute(sql, (connection["packageName"], id_session, connection["ip_src"], connection["ip_dst"]
+            , connection["prt_src"], connection["prt_dst"], id_session, connection["ip_dst"],connection["ip_src"]
+            , connection["prt_dst"], connection["prt_src"]))  # safe sql querry
+            db.commit()
+            return 0
+    except Exception as e:
+        mono_tools.handle_db_exception(e, db, cursor)
+        return -1
+
+def get_conversation_id(id_session,conv_type,db,connection):
+    l = logging.getLogger("mono_conversation")
+    l.debug("update packageName conversation")
+    names = get_table_name_and_id_key(conv_type)
+    try:
+        sql = "SELECT "+ names["id_name"] +" FROM " + names["table_name"] + " WHERE (id_session=%s AND ip_a=%s \
+                AND  ip_b=%s AND port_a=%s AND port_b=%s) OR (id_session=%s AND ip_a=%s \
+                AND  ip_b=%s AND port_a=%s AND port_b=%s) "
+        cursor = db.cursor()
+        cursor.execute(sql, (id_session, connection["ip_src"], connection["ip_dst"]
+                             , connection["prt_src"], connection["prt_dst"], id_session, connection["ip_dst"],
+                             connection["ip_src"]
+                             , connection["prt_dst"], connection["prt_src"]))  # safe sql querry
+        result = cursor.fetchone()
+        return result
+    except Exception as e:
+        mono_tools.handle_db_exception(e, db, cursor)
+        return -1
+
+def get_conversation(id_session,conv_type,db,connection):
+    l = logging.getLogger("mono_conversation")
+    l.debug("getting conversation")
+    names = get_table_name_and_id_key(conv_type)
+
+    try:
+        sql = "SELECT "+ names["id_name"] +" ,package_name FROM " + names["table_name"] + " WHERE (id_session=%s AND ip_a=%s \
+                AND  ip_b=%s AND port_a=%s AND port_b=%s) OR (id_session=%s AND ip_a=%s \
+                AND  ip_b=%s AND port_a=%s AND port_b=%s) ORDER BY " +names["id_name"]+ " DESC LIMIT 1 "
+        cursor = db.cursor(cursors.DictCursor)
+        cursor.execute(sql, (id_session, connection["ip_src"], connection["ip_dst"]
+                             , connection["prt_src"], connection["prt_dst"], id_session, connection["ip_dst"],
+                             connection["ip_src"]
+                             , connection["prt_dst"], connection["prt_src"]))  # safe sql querry
+        if(cursor.rowcount > 0):
+            l.debug("WE HAVE RESULT")
+            result = cursor.fetchone()
+        else:
+            result = "null"
+        return result
+    except Exception as e:
+        mono_tools.handle_db_exception(e, db, cursor)
+        return -1
+
+def manage_packages(id_session,conv_type,connection,db):
+    l = logging.getLogger("mono_conversation")
+    l.debug("manage_packages")
+    try:
+        conv = get_conversation(id_session, conv_type, db, connection)
+        cursor = db.cursor()
+        if(conv != "null"):
+            l.debug(conv)
+            if(conv['package_name'] == ''):
+                l.debug("UPDATING")
+                update_package_conversation(id_session,conv_type,db,connection)
+            elif(conv['package_name'] != connection['packageName']):
+                l.debug("CREATING CONVERSATION")
+                create_conv(connection,convs_start,conv_type,id_session,db)
+                update_conv(conv,conv_type,db)
+            else:
+                l.debug("ALREADY UPDATED")
+
+        else:
+            l.debug("conversation not found")
+    except Exception as e:
+        mono_tools.handle_db_exception(e, db, cursor)
+        return -1
+
+
+
+
+
+
+
+
