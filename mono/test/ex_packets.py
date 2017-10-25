@@ -13,7 +13,7 @@ import mono
 import MySQLdb
 import threading
 import sys
-import socket #for getservbyport 
+import android_socket #for getservbyport
 
 try:
     # This import works from the project directory
@@ -23,7 +23,7 @@ except ImportError:
     from scapy.layers import http
 
 #require scapy-http-1.8
-proto_to_name = {num:name[8:] for name,num in vars(socket).items() if name.startswith("IPPROTO")}
+proto_to_name = {num:name[8:] for name,num in vars(android_socket).items() if name.startswith("IPPROTO")}
 
 def callback(packet):
     #retrieve packets info
@@ -54,7 +54,7 @@ def callback(packet):
         is_udp = True;
     if (is_tcp or is_udp):
         try: 
-            l5_proto = socket.getservbyport(min(port_src,port_dst),'udp' if is_udp else 'tcp')
+            l5_proto = android_socket.getservbyport(min(port_src, port_dst), 'udp' if is_udp else 'tcp')
         except Exception as e:
             print "Could not retrieve proto name (maybe port number > 1024)"
             print str(e)

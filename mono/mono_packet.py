@@ -1,7 +1,7 @@
 import scapy
 from scapy.all import IP, UDP,TCP, ICMP, Raw # for export/import_object
-import socket
 import importlib
+import socket
 import sys
 import logging
 if sys.version_info > (3, 3):
@@ -39,7 +39,7 @@ def packet_summary(packet):
     if (is_tcp or is_udp):
         try: 
             port_number = min(port_src, port_dst)
-            l5_proto = socket.getservbyport(port_number,'udp' if is_udp else 'tcp')
+            l5_proto = socket.getservbyport(port_number, 'udp' if is_udp else 'tcp')
         except Exception as e:
             l = logging.getLogger("mono_packet")
             l.warn("Could not retrieve proto name for port %s %s (maybe port is not registered or > 1024)"%(port_number,transport_string))
@@ -205,8 +205,22 @@ def set_selected_all_packets_in_session(id_session, check, db):
         raise 
         return -1;
 
+def set_package(id_session,id_packet,packageName, db):
+    try:
+        sql = "UPDATE PACKETS SET package_name = %s  WHERE id_session = %s AND id_packet= %s AND package_name = 'Unknow'"
+        params = (packageName,id_session,id_packet)
+        cursor = db.cursor()
+        cursor.execute(sql, params)  # safe sql querry
+        db.commit()
+        return 0;
+    except Exception as e:
+        mono_tools.handle_db_exception(e, db, cursor)
+        raise
+        return -1;
 
-#tested But see if the L persists at client side 
+
+
+#tested But see if the L persists at client side
 #in the expression {'id_session': 45L, 'class_name': ....}
 def get_packets_summary(max_packets, id_session, id_first, db):
     try:

@@ -37,7 +37,7 @@ class IfacesTestCase(unittest.TestCase):
         print("#test ifaces (check if eth0 is in list of ifaces)")
         ifaces = mono_session.get_ifaces()
         print(ifaces)
-        self.assertIn("eth0", ifaces, msg="Coucou")
+        self.assertIn("en0", ifaces, msg="Coucou")
 
 def ifaces_suite():
     suite = unittest.TestSuite()

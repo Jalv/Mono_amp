@@ -14,7 +14,7 @@ Created on Mon Mar 27 15:31:29 2017
 if  __package__ != 'mono.test': #is None
     import sys
     from os import path
-    sys.path.append( path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
+    sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
 
 import unittest
 from scapy.all import IP
@@ -28,6 +28,7 @@ else:
     from MySQLdb import Warning
 
 import warnings
+import json
 from mono import mono_conversation as mono_conv
 from mono import mono_packet
 from mono import mono_config as mc
@@ -300,6 +301,14 @@ class ConversationsTestCase(unittest.TestCase):
             convs = mono_conv.get_conversations(id_session, db, conv_type)
             self.assertEqual(len(convs), 0)
 
+    def test_update_package_name(self):
+        print("\n#test_select")
+        db = connect(mc.db_host, mc.db_user_name, mc.db_password, mc.db_db_name)  # host, user, password, db
+        connection = {'ip_src': "192.168.1.36", 'ip_dst': "216.58.214.174", 'prt_src': 52280, 'prt_dst': 443,'package_name': "com.desde.server"}
+        print(connection['ip_src'])
+        mono_conv.update_package_conversation(239,2,db,connection)
+        self.assertEqual(mono_conv.update_package_conversation(239,2,db,connection),0)
+
             
     def test_add_packet(self):
         pass
@@ -322,10 +331,11 @@ if __name__ == '__main__':
 
     #configure and run tests
     suite = unittest.TestSuite()
-#    suite.addTest(ConversationsTestCase("test_add_conv_ipv4"))
-#    suite.addTest(ConversationsTestCase("test_add_conv_tcp_udp"))
-#    suite.addTest(ConversationsTestCase("test_remove"))
+    suite.addTest(ConversationsTestCase("test_add_conv_ipv4"))
+    suite.addTest(ConversationsTestCase("test_add_conv_tcp_udp"))
+    suite.addTest(ConversationsTestCase("test_remove"))
     suite.addTest(ConversationsTestCase("test_select_conversation"))
+#    suite.addTest(ConversationsTestCase("test_update_package_name"))
     runner = unittest.TextTestRunner()
     runner.run(suite)
     #exception_catcher()
